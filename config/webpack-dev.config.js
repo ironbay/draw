@@ -70,5 +70,8 @@ module.exports = {
 	},
 	devServer: {
 		hot: true,
+		historyApiFallback: {
+			index: '/'
+		},
 	},
 }

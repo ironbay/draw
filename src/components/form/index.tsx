@@ -25,7 +25,7 @@ export const InputLabel = wrap(Text, 'input-text', {
 	'size-3': true,
 	'weight-5': true,
 	'fg-gray': true,
-	'mgn-b': true,
+	'mgn-b2': true,
 }, {})
 
 
@@ -71,7 +71,15 @@ export class InputTags extends React.Component<IInputTagProps, any> {
 }
 
 export function editor(name, e) {
-	this.setState({
-		[name]: e.target.value
+	const component = this as React.Component<any, any>
+	const { value } = e.target
+	component.setState(state => {
+		return {
+			...state,
+			item: {
+				...state.item,
+				[name]: value
+			}
+		}
 	})
 }
