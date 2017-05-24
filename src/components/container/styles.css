@@ -5,6 +5,18 @@
 	display: flex;
 }
 
+.container.block {
+	display: block;
+}
+
+.container.flex-fixed {
+	flex-shrink: 0;
+}
+
+.container.scroll {
+	overflow: scroll;
+}
+
 .container.vertical { flex-direction: column; }
 .container.horizontal { flex-direction: row; }
 
