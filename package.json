@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@ironbay/kora": "^1.0.906",
+    "@ironbay/kora": "^1.0.911",
     "classnames": "^2.2.5",
     "moment": "^2.18.1",
     "react": "^15.5.4",
