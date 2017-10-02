@@ -11,15 +11,19 @@ export default class Root extends React.Component<any, any> {
 	}
 	componentDidMount() {
 		Store.onChanged.add(() => {
+			console.log(Store.get([]))
 			this.forceUpdate()
 		})
 		Kora.query_path([])
 	}
 	render() {
+		const user = Store.get(['user', 'key'])
+		if (!user)
+			return false
 		return (
 			<Container vertical>
 				{
-					React.cloneElement(this.props.children)
+					[].concat(this.props.children).map((item, n) => React.cloneElement(item, {key: n}))
 				}
 			</Container>
 		)

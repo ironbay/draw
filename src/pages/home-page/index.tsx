@@ -5,88 +5,92 @@ import Container from '../../components/container'
 import Text from '../../components/text'
 import Tag from '../../components/tag'
 import { Modal } from '../../components/modal'
-import * as Form from '../../components/form'
 
-import { Kora, Store } from '../../kora'
+import { broadcast, Kora, Store } from '../../kora'
+import { UUID } from '@ironbay/kora'
 
 export default class HomePage extends React.Component<any, any> {
 	constructor() {
 		super()
-		this.state = {
-			item: {
-				name: 'Some Item',
-				tags: {
-					hello: 1,
-					bye: 1,
-				},
-			},
-			modal: true,
-		}
+		this.state = {}
 	}
 	componentDidMount() {
+		const width = window.outerWidth
+		const height = window.outerHeight
+		this.canvas.width = 700
+		this.canvas.height = 700
+		this.loop()
 	}
 	render() {
-		const { item, modal } = this.state
 		return (
-			<Container vertical align-center pad-8>
-				<Modal active={modal} onHide={() => this.setState({modal: false})} >
-					<Container pad-8 vertical>
-						<Text size-5 weight-5>Edit Item</Text>
-					</Container>
-					<Container vertical>
-						<Form.Row>
-							<Form.Block border-r>
-								<Form.Label>Name</Form.Label>
-								<Form.Input value={item.name} placeholder='Name of item' onChange={Form.editor.bind(this, 'name')}/>
-							</Form.Block>
-							<Form.Block>
-								<Form.Label>Referrer</Form.Label>
-								<Form.Input placeholder='Your name' />
-							</Form.Block>
-						</Form.Row>
-						<Form.Row>
-							<Form.Block border-r>
-								<Form.Label>Description</Form.Label>
-								<Form.TextArea rows={5} placeholder='Description of item' />
-							</Form.Block>
-						</Form.Row>
-						<Form.Row>
-							<Form.Block>
-								<Form.Label>Tags</Form.Label>
-								<Form.Tags placeholder='Add tag...' value={item.tags} onChange={Form.editor.bind(this, 'tags')} />
-							</Form.Block>
-						</Form.Row>
-					</Container>
-					<Container cursor bg-blue pad-6 justify-center>
-						<Text fg-white weight-5 >Save</Text>
-					</Container>
-				</Modal>
-				<Container vertical wrap>
-					<Text size-8 weight-5 mgn-v8>Example</Text>
-					<Container vertical pad-8 bg-white border mgn-b8>
-						<Text size-5 weight-5>Some Title</Text>
-						<Text size-4 fg-gray mgn-t2>added by Dax five days ago</Text>
-						<Container mgn-t3>
-							<Tag fg-blue mgn-r3>Hello</Tag>
-							<Tag fg-blue mgn-r3>Bye</Tag>
-						</Container>
-						<Text fg-gray line-8 mgn-t3>
-						Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse rutrum sem sit amet ultricies lacinia. Nulla et varius elit. Duis sed tristique mi, sit amet lacinia nisi. Etiam in nunc et est interdum placerat vel ut elit. Integer feugiat lobortis purus, vitae iaculis lorem. Fusce sed turpis tellus. Vestibulum gravida mauris eget mi fermentum bibendum.
-						</Text>
-					</Container>
-					<Container vertical pad-8 bg-white border mgn-b8>
-						<Text size-5 weight-5>Some Title</Text>
-						<Text size-4 fg-gray mgn-t2>added by Dax five days ago</Text>
-						<Container mgn-t3>
-							<Tag fg-blue mgn-r3>Hello</Tag>
-							<Tag fg-blue mgn-r3>Bye</Tag>
-						</Container>
-						<Text fg-gray line-8 mgn-t3>
-						Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse rutrum sem sit amet ultricies lacinia. Nulla et varius elit. Duis sed tristique mi, sit amet lacinia nisi. Etiam in nunc et est interdum placerat vel ut elit. Integer feugiat lobortis purus, vitae iaculis lorem. Fusce sed turpis tellus. Vestibulum gravida mauris eget mi fermentum bibendum.
-						</Text>
-					</Container>
-				</Container>
+			<Container fill block >
+				<canvas
+					onMouseDown={this.handle_down}
+					onMouseMove={this.handle_move}
+					onMouseUp={this.handle_up}
+					ref='canvas'
+					style={{border: '1px solid'}} />
+				<button onClick={this.handle_clear}>Clear</button>
 			</Container>
 		)
+	}
+	private get canvas() { return this.refs.canvas as HTMLCanvasElement }
+
+	private handle_clear = () => {
+		broadcast({
+			delete: {
+				drawing: 1
+			}
+		})
+	}
+
+	private line = null
+	private handle_down = (e: React.MouseEvent<HTMLCanvasElement>) => {
+		this.line = UUID.ascending()
+	}
+	private handle_move = (e: React.MouseEvent<HTMLCanvasElement>) => {
+		if (!this.line)
+			return
+		// broadcast({
+		// 	merge: {
+		// 		'drawing': {
+		// 			'lines': {
+		// 				[this.line]: {
+		// 					[new Date().getTime()]: {
+		// 						x: e.clientX,
+		// 						y: e.clientY,
+		// 					}
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// })
+		Kora.send('kora.template.call', {
+			name: 'draw.point',
+			args: [this.line, new Date().getTime().toString(), e.clientX, e.clientY]
+		})
+	}
+	private handle_up = (e: React.MouseEvent<HTMLCanvasElement>) => {
+		this.line = null
+	}
+	private loop = () => {
+		const canvas = this.canvas
+		const ctx = canvas.getContext('2d')
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+		Object
+		.values(Store.get(['drawing', 'lines']) || {})
+		.map(line => {
+			const [first, ...points] = Object.entries(line || {}).sort((a,b) => a[0] < b[0] ? 1 : -1).map(r => r[1])
+			if (!first)
+				return
+			ctx.beginPath()
+			ctx.moveTo(first.x, first.y)
+			points.forEach(point => ctx.lineTo(point.x, point.y))
+			ctx.lineWidth = 4
+			ctx.stroke()
+			ctx.closePath()
+		})
+		requestAnimationFrame(this.loop)
 	}
 }
